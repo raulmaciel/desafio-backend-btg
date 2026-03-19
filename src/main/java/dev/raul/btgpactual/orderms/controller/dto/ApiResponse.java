@@ -1,4 +1,5 @@
 package dev.raul.btgpactual.orderms.controller.dto;
+import java.util.List;
 
-public class ApiResponse {
+public record ApiResponse<T>(List<T> data, PaginationResponse pagination) {
 }
