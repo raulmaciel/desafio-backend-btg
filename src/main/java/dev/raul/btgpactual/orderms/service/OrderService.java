@@ -1,9 +1,12 @@
 package dev.raul.btgpactual.orderms.service;
 
+import dev.raul.btgpactual.orderms.controller.dto.OrderResponse;
 import dev.raul.btgpactual.orderms.entity.OrderEntity;
 import dev.raul.btgpactual.orderms.entity.OrderItem;
 import dev.raul.btgpactual.orderms.listener.dto.OrderCreatedEvent;
 import dev.raul.btgpactual.orderms.repository.OrderRepository;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;
@@ -20,11 +23,17 @@ public class OrderService {
     public void save(OrderCreatedEvent event){
         var entity = new OrderEntity();
         entity.setOrderId(event.codigoPedido());
-        entity.setCustomerId(event.codigoPedido());
+        entity.setCustomerId(event.codigoCliente());
         entity.setItems(getOrderItems(event));
         entity.setTotal(getTotal(event));
 
         orderRepository.save(entity);
+    }
+
+    public Page<OrderResponse> findAllByCustomerId(Long customerId, PageRequest pageRequest){
+        var orders = orderRepository.findAllByCustomerId(customerId, pageRequest);
+
+        return orders.map(OrderResponse::fromEntity);
     }
 
     private static List<OrderItem> getOrderItems(OrderCreatedEvent event) {
