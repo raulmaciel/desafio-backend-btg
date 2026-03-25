@@ -42,4 +42,11 @@ public class OrderController {
         return ResponseEntity.ok(new CustomerSummaryResponse(totalOrders, totalAmount));
     }
 
+    @GetMapping("/orders/{orderId}")
+    public ResponseEntity<OrderResponse> getOrder(@PathVariable Long orderId) {
+        return orderService.findById(orderId)
+                .map(ResponseEntity::ok)
+                .orElse(ResponseEntity.notFound().build());
+    }
+
 }

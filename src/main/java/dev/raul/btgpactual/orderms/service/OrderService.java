@@ -15,6 +15,7 @@ import org.springframework.stereotype.Service;
 import java.math.BigDecimal;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 
 @Service
 public class OrderService {
@@ -57,6 +58,11 @@ public class OrderService {
 
     public Long countByCustomerId(Long customerId) {
         return orderRepository.countByCustomerId(customerId);
+    }
+
+    public Optional<OrderResponse> findById(Long orderId) {
+        return orderRepository.findById(orderId)
+                .map(OrderResponse::fromEntity);
     }
 
     private static List<OrderItem> getOrderItems(OrderCreatedEvent event) {
