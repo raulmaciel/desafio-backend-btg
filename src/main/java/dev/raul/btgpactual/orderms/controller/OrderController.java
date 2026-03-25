@@ -1,6 +1,7 @@
 package dev.raul.btgpactual.orderms.controller;
 
 import dev.raul.btgpactual.orderms.controller.dto.ApiResponse;
+import dev.raul.btgpactual.orderms.controller.dto.CustomerSummaryResponse;
 import dev.raul.btgpactual.orderms.controller.dto.OrderResponse;
 import dev.raul.btgpactual.orderms.controller.dto.PaginationResponse;
 import dev.raul.btgpactual.orderms.service.OrderService;
@@ -31,6 +32,14 @@ public class OrderController {
                 pageResponseOrders.getContent(),
                 PaginationResponse.fromPage(pageResponseOrders)
         ));
+    }
+
+    @GetMapping("/customers/{customerId}/summary")
+    public ResponseEntity<CustomerSummaryResponse> getSummary(@PathVariable Long customerId) {
+        var totalAmount = orderService.getTotalAmountByCustomerId(customerId);
+        var totalOrders = orderService.countByCustomerId(customerId);
+
+        return ResponseEntity.ok(new CustomerSummaryResponse(totalOrders, totalAmount));
     }
 
 }
