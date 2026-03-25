@@ -1,90 +1,91 @@
-# 🚀 BTG Pactual Backend Challenge
+# 🚀 BTG Pactual Backend Challenge - Order Microservice
 
-![Java](https://img.shields.io/badge/Java-23-blue.svg)
-![Spring Boot](https://img.shields.io/badge/Spring%20Boot-4.0.3-brightgreen.svg)
+![Java](https://img.shields.io/badge/Java-21-blue.svg)
+![Spring Boot](https://img.shields.io/badge/Spring%20Boot-3.4.0-brightgreen.svg)
 ![RabbitMQ](https://img.shields.io/badge/RabbitMQ-Message%20Broker-orange.svg)
 ![MongoDB](https://img.shields.io/badge/MongoDB-NoSQL-success.svg)
 
-Este repositório contém a solução para o **Desafio Backend do BTG Pactual**. O objetivo do projeto é construir um microsserviço eficiente e assíncrono capaz de processar milhares de pedidos de clientes e disponibilizar informações sumarizadas através de uma API Restful.
+Este repositório contém a solução para o **Desafio Backend do BTG Pactual**. O microsserviço processa pedidos de forma assíncrona via RabbitMQ, persiste em MongoDB e disponibiliza agregações financeiras via API REST.
 
-## 🧠 Arquitetura e Fluxo
+---
 
-1. **Mensageria (RabbitMQ):** A aplicação escuta ativamente a fila `btg-pactual-order-created`. Todas as mensagens (pedidos) publicadas nessa fila em formato JSON são consumidas via listeners.
-2. **Processamento Assíncrono:** Ao ler a mensagem, o microsserviço traduz o JSON utilizando `JacksonJsonMessageConverter` de volta para entidades de domínio Java.
-3. **Persistência (MongoDB):** A escolha de um banco NoSQL foi pautada na velocidade de escrita massiva e no formato flexível em que os dados de compras costumam trafegar (aninhados, arrays de subdocumentos). O pedido é consolidado e armazenado de forma não bloqueante.
-4. **Respostas (API Rest):** A camada de Controllers disponibiliza dados calculados em tempo real do Total Financeiro, a Contagem e o Extrato dos Pedidos por Cliente.
+## 🧠 Arquitetura e Funcionalidades
+
+1.  **Mensageria (RabbitMQ):** Consumo assíncrono da fila `btg-pactual-order-created`.
+2.  **Persistência (MongoDB):** Armazenamento de pedidos e itens com foco em alta performance de escrita.
+3.  **Agregações (Summary):** Uso de **MongoDB Aggregation Framework** para calcular o valor total e a contagem de pedidos por cliente em tempo real.
+4.  **API REST**: Endpoints para resumo do cliente, detalhes de pedido e listagem paginada.
 
 ---
 
 ## 🛠️ Tecnologias Utilizadas
 
-- **Java 23**
-- **Spring Boot 4.x** (Web, Data MongoDB, AMQP)
+- **Java 21** & **Spring Boot 3.4.0**
+- **Spring Data MongoDB** & **Spring AMQP**
 - **RabbitMQ** (Message Broker)
-- **MongoDB** (Banco de Dados NoSQL)
-- **Maven** (Gerenciador de Dependências)
+- **MongoDB** (NoSQL Database)
+- **Docker** & **Docker Compose**
+- **MockitoBean** (Spring Boot 3.4.0+ testing pattern)
 
 ---
 
-## ⚙️ Como Executar o Projeto Localmente
+## ⚙️ Como Executar o Projeto (Via Docker Compose)
 
-### Pré-requisitos
-Para rodar este projeto, você precisará ter instalado em sua máquina:
-- [Java 23+](https://www.oracle.com/java/technologies/javase/jdk23-archive-downloads.html)
-- [Docker](https://www.docker.com/) (Para inicializar o RabbitMQ e o MongoDB rapidamente sem instalação local engessada)
-
-### 1. Subir a Infraestrutura (RabbitMQ & MongoDB)
-Dentro do seu terminal de preferência, rode os comandos Docker para subir o Mongo e o Rabbit com as mesmas credenciais padronizadas neste projeto (user: `admin` | pass: `admin`):
+A forma recomendada de rodar a aplicação é utilizando o **Docker Compose**, que já orquestra a aplicação junto com o Banco de Dados e o Broker.
 
 ```bash
-# Subir RabbitMQ via Container
-docker run -d --name rabbitmq -p 5672:5672 -p 15672:15672 rabbitmq:3-management
-
-# Subir MongoDB via Container
-docker run -d --name mongodb -p 27017:27017 -e MONGO_INITDB_ROOT_USERNAME=admin -e MONGO_INITDB_ROOT_PASSWORD=admin mongo:latest
+# Na raiz do projeto, execute:
+docker-compose up --build
 ```
 
-### 2. Rodar a Aplicação Spring Boot
-Abra um terminal na pasta do projeto e inicie a execução do Spring via Maven Wrapper:
-```bash
-./mvnw spring-boot:run
-```
-*(Caso esteja no Windows, use `mvnw.cmd spring-boot:run`)*
+- **API**: `http://localhost:8080`
+- **RabbitMQ Management**: `http://localhost:15672` (guest/guest)
+- **MongoDB**: `mongodb://localhost:27017`
 
 ---
 
-## 📡 API Endpoints (Em Desenvolvimento)
+## 📡 API Endpoints
 
-**Base URL:** `http://localhost:8080`
+### 1. Resumo do Cliente
+Retorna a quantidade total de pedidos e o valor somado gasto pelo cliente.
+- `GET /customers/{customerId}/summary`
 
-1. **Visão Global dos Pedidos por Cliente:**
-   * `GET /customers/{customerId}/orders`
-   * **Retorno Esperado:** Lista completa de pedidos que aquele cliente já fez, sua contagem volumétrica total, e a soma financeira exata de todas as suas compras reunidas. *(Funcionalidade aguardando implementação final).*
+### 2. Listagem de Pedidos
+Retorna os pedidos de forma paginada.
+- `GET /customers/{customerId}/orders?page=0&pageSize=10`
+
+### 3. Detalhes do Pedido
+Retorna os dados básicos de um pedido específico.
+- `GET /orders/{orderId}`
 
 ---
 
-## ✉️ Payload Padrão do RabbitMQ (Entrada)
-Estrutura exata de mensagem JSON que a aplicação está aguardando você publicar na fila `btg-pactual-order-created`:
+## ✉️ Como Testar
+
+### Passo 1: Enviar Mensagem (RabbitMQ)
+Publique um JSON na fila `btg-pactual-order-created` via Management Console:
 
 ```json
 {
   "codigoPedido": 1001,
   "codigoCliente": 1,
   "itens": [
-    {
-      "produto": "lápis",
-      "quantidade": 100,
-      "preco": 1.10
-    },
-    {
-      "produto": "caderno",
-      "quantidade": 10,
-      "preco": 1.00
-    }
+    { "produto": "Teclado", "quantidade": 1, "preco": 150.00 },
+    { "produto": "Mouse", "quantidade": 2, "preco": 75.00 }
   ]
 }
 ```
 
+### Passo 2: Validar API
+Acesse o resumo para ver o cálculo automático:
+`GET http://localhost:8080/customers/1/summary`
+
 ---
+
+## 🧪 Testes Automatizados
+O projeto conta com testes unitários, de controller e de integração.
+```bash
+./mvnw test
+```
 
 Desenvolvido para resolução do **Desafio BTG Pactual.**
